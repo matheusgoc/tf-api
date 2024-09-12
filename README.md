@@ -85,3 +85,41 @@ $ bun nest g s <name> <optional path>
 # CRUD resource
 $ bun nest g res <name>
 ```
+
+## Authentication
+
+The authentication is implemented at auth module on top of [Passport library](https://www.passportjs.org). It follows two main strategies:
+
+- [passport-local](https://www.passportjs.org/packages/passport-local/):
+  validates the username (email) and password
+
+- [passport-jwt](https://www.passportjs.org/packages/passport-jwt/):
+  validates a [JWT - JSON Web Token](https://jwt.io/)
+
+### Sign-in endpoint
+
+The endpoint that uses the `passport-local` strategy to sign in the user is:
+
+```bash
+POST /v1/auth/login
+
+body: {
+  "username": string,
+  "password": string
+}
+
+response: {
+	"access_token": string,
+	"token_type": "Bearer",
+	"expires_in": seconds,
+	"user": User
+}
+```
+
+### @UseGuards(JwtAuthGuard) protection
+
+Once having the `access_token` the other endpoints on overall modules can be protetected with `@UseGuards(JwtAuthGuard)` guard annotation at either controller level or action method within the controller.
+
+### @SkipAuth()
+
+Actions within a protected controller might be skipped by `@SkipAuth()` annotation when needed, which will turn the endpoint public.

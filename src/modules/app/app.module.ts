@@ -13,6 +13,7 @@ import {
 } from '../../commands/seed-user.command';
 import { UserModule } from '../../modules/user/user.module';
 import { CoreModule } from '../core/core.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CoreModule } from '../core/core.module';
     AppModule,
     CoreModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [

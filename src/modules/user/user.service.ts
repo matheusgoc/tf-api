@@ -114,6 +114,10 @@ export class UserService extends EncryptionService {
     return user;
   }
 
+  findByEmail(email: string) {
+    return this.repo.findOneBy({ email });
+  }
+
   async update(id: string, dto: UpdateUserDto) {
     const user = await this.findOne(id);
 
