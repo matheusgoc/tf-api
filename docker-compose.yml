@@ -1,0 +1,20 @@
+version: '3'
+services:
+  nestjs:
+    build: .
+    ports:
+      - '80:4000'
+    environment:
+      - NODE_ENV=production
+      - FRONTEND_HOST=${FRONTEND_HOST}
+      - PORT=4000
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_LOGGIN_ENABLED=${DB_LOGGIN_ENABLED}
+      - DATA_ENCRYPT_SECRET=${DATA_ENCRYPT_SECRET}
+      - MASTER_USER_NAME=${MASTER_USER_NAME}
+      - MASTER_USER_EMAIL=${MASTER_USER_EMAIL}
+      - MASTER_USER_PASSWORD=${MASTER_USER_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_TIME=${JWT_EXPIRATION_TIME}
