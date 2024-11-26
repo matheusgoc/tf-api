@@ -14,7 +14,7 @@ export class PageOptionsDto {
   @IsArray()
   @IsArray({ each: true })
   @Type(() => Array<[string, 'asc' | 'desc' | 'ASC' | 'DESC']>)
-  @Transform(({ value }) => JSON.parse(value))
+  @Transform(({ value }) => JSON.parse(decodeURIComponent(value)))
   @IsOptional()
   order?: Array<[string, 'ASC' | 'DESC']> = [];
 
