@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MongoRepository } from 'typeorm';
 import { ObjectId } from 'mongodb';
@@ -6,7 +11,7 @@ import { MongoFindManyOptions } from 'typeorm/find-options/mongodb/MongoFindMany
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from '../../entities/user.entity';
+import { User, USER_ROLE } from '../../entities/user.entity';
 import { ListUserDto } from './dto/list-user.dto';
 import { PageDto, PageMetaDto } from '../core/dto/page-options.dto';
 import { EncryptionService } from '../core/encryption/encryption.service';
@@ -17,7 +22,24 @@ export class UserService extends EncryptionService {
     super();
   }
 
+  private async validate(dto: UpdateUserDto, excludeId?: string) {
+    if (dto.role === USER_ROLE.MASTER) {
+      throw new UnprocessableEntityException('USER_MASTER_NOT_ALLOWED');
+    }
+    if (dto.email) {
+      const where: Record<string, any> = { email: dto.email };
+      if (excludeId) {
+        where._id = { $ne: new ObjectId(excludeId) };
+      }
+      if (await this.repo.countBy(where)) {
+        throw new ConflictException('USER_WITH_SAME_EMAIL');
+      }
+    }
+  }
+
   async create(dto: CreateUserDto) {
+    await this.validate(dto);
+
     const user = this.repo.create({
       name: dto.name,
       email: dto.email,
@@ -93,7 +115,15 @@ export class UserService extends EncryptionService {
       take: options.take,
       order,
       where: this.filter(options),
-      select: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'name',
+        'email',
+        'role',
+        'createdAt',
+        'updatedAt',
+        'deactivatedAt',
+      ],
     });
 
     const pageMetaData = new PageMetaDto({
@@ -108,7 +138,7 @@ export class UserService extends EncryptionService {
     const user = await this.repo.findOneBy({ _id: { $eq: new ObjectId(id) } });
 
     if (!user) {
-      throw new NotFoundException('User does not exist');
+      throw new NotFoundException('USER_NOT_FOUND');
     }
 
     return user;
@@ -119,6 +149,8 @@ export class UserService extends EncryptionService {
   }
 
   async update(id: string, dto: UpdateUserDto) {
+    await this.validate(dto, id);
+
     const user = await this.findOne(id);
 
     user.name = dto.name;
