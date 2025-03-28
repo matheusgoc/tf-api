@@ -9,9 +9,10 @@ import { MongoRepository } from 'typeorm';
 import { ObjectId } from 'mongodb';
 import { MongoFindManyOptions } from 'typeorm/find-options/mongodb/MongoFindManyOptions';
 
+import { User, USER_ROLE } from '../../entities/user.entity';
+import { UserProfileDto } from './dto/user-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, USER_ROLE } from '../../entities/user.entity';
 import { ListUserDto } from './dto/list-user.dto';
 import { PageDto, PageMetaDto } from '../core/dto/page-options.dto';
 import { EncryptionService } from '../core/encryption/encryption.service';
@@ -20,33 +21,6 @@ import { EncryptionService } from '../core/encryption/encryption.service';
 export class UserService extends EncryptionService {
   constructor(@InjectRepository(User) private repo: MongoRepository<User>) {
     super();
-  }
-
-  private async validate(dto: UpdateUserDto, excludeId?: string) {
-    if (dto.role === USER_ROLE.MASTER) {
-      throw new UnprocessableEntityException('USER_MASTER_NOT_ALLOWED');
-    }
-    if (dto.email) {
-      const where: Record<string, any> = { email: dto.email };
-      if (excludeId) {
-        where._id = { $ne: new ObjectId(excludeId) };
-      }
-      if (await this.repo.countBy(where)) {
-        throw new ConflictException('USER_WITH_SAME_EMAIL');
-      }
-    }
-  }
-
-  async create(dto: CreateUserDto) {
-    await this.validate(dto);
-
-    const user = this.repo.create({
-      name: dto.name,
-      email: dto.email,
-      role: dto.role,
-    });
-
-    return this.repo.save(user);
   }
 
   private filter(options: ListUserDto) {
@@ -141,11 +115,44 @@ export class UserService extends EncryptionService {
       throw new NotFoundException('USER_NOT_FOUND');
     }
 
+    delete user.password;
+
     return user;
   }
 
   findByEmail(email: string) {
     return this.repo.findOneBy({ email });
+  }
+
+  private async validate(dto: UpdateUserDto, excludeId?: string) {
+    if (dto.role === USER_ROLE.MASTER) {
+      throw new UnprocessableEntityException('USER_MASTER_NOT_ALLOWED');
+    }
+    if (dto.email) {
+      const where: Record<string, any> = { email: dto.email };
+      if (excludeId) {
+        where._id = { $ne: new ObjectId(excludeId) };
+      }
+      if (await this.repo.countBy(where)) {
+        throw new ConflictException('USER_WITH_SAME_EMAIL');
+      }
+    }
+  }
+
+  async create(dto: CreateUserDto) {
+    await this.validate(dto);
+
+    const user = this.repo.create({
+      name: dto.name,
+      email: dto.email,
+      role: dto.role,
+      profile: {
+        language: dto.profile.language,
+        region: dto.profile.region,
+      },
+    });
+
+    return this.repo.save(user);
   }
 
   async update(id: string, dto: UpdateUserDto) {
@@ -156,6 +163,20 @@ export class UserService extends EncryptionService {
     user.name = dto.name;
     user.email = dto.email;
     user.role = dto.role;
+
+    return this.repo.save(user);
+  }
+
+  async updateProfile(id: string, dto: UserProfileDto) {
+    const user = await this.findOne(id);
+
+    if (dto.language) {
+      user.profile = { ...user.profile, language: dto.language };
+    }
+
+    if (dto.region) {
+      user.profile = { ...user.profile, region: dto.region };
+    }
 
     return this.repo.save(user);
   }

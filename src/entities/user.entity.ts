@@ -14,6 +14,24 @@ export enum USER_ROLE {
   MASTER = 'master',
 }
 
+export enum USER_PROFILE_LANGUAGE {
+  EN_US = 'en-US',
+  PT_BR = 'pt-BR',
+}
+
+export enum USER_PROFILE_REGION {
+  BR = 'br',
+  US = 'us',
+}
+
+class Profile {
+  @Column()
+  language: USER_PROFILE_LANGUAGE;
+
+  @Column()
+  region: USER_PROFILE_REGION;
+}
+
 @Entity({ name: 'users' })
 export class User {
   @ObjectIdColumn({ name: '_id' })
@@ -31,6 +49,9 @@ export class User {
 
   @Column()
   role: USER_ROLE;
+
+  @Column(() => Profile)
+  profile: Profile;
 
   @CreateDateColumn()
   createdAt: Date;
