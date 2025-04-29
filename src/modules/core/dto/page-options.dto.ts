@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min, IsArray } from 'class-validator';
+import { IsInt, IsOptional, Min, IsArray } from 'class-validator';
 
 export interface PageMetaDtoParameters {
   pageOptionsDto: PageOptionsDto;
@@ -36,7 +36,6 @@ export class PageOptionsDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
   @IsOptional()
   take?: number = 10;
 
