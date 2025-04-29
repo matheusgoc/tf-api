@@ -10,13 +10,10 @@ import {
   HttpCode,
   Put,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { NO_CONTENT } from 'http-status';
 
-import { User } from '../../entities/user.entity';
 import { UserService } from './user.service';
-import { UserProfileDto } from '../../modules/user/dto/user-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ListUserDto } from './dto/list-user.dto';
@@ -45,16 +42,6 @@ export class UserController {
   @Put(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(id, updateUserDto);
-  }
-
-  @Patch('/profile')
-  updateProfile(
-    @Req() req: { user: User },
-    @Body() userProfileDto: UserProfileDto,
-  ) {
-    const id = req.user.id.toString();
-
-    return this.userService.updateProfile(id, userProfileDto);
   }
 
   @HttpCode(NO_CONTENT)
