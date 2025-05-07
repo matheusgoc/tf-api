@@ -47,7 +47,7 @@ export class UserService extends EncryptionService {
     // search by email - when search represents an email
     if (search && search.includes('@')) {
       where.$and.push({
-        email: { $eq: search },
+        email: { $eq: search.toLowerCase() },
       });
     }
 
