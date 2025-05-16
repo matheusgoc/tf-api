@@ -1,8 +1,8 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { FindOptionsOrder } from 'typeorm';
+import { stringify } from 'qs';
 
 import { PageOptionsDto } from '../dto/page-options.dto';
-
 @Injectable()
 export class BaseService {
   mapSort<Entity>(
@@ -29,5 +29,15 @@ export class BaseService {
     }
 
     return order;
+  }
+
+  generateLink(
+    host: string,
+    url: string,
+    params?: Record<string, string | number>,
+  ) {
+    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+    const link = `${protocol}://${host}/${url}`;
+    return params ? `${link}?${stringify(params)}` : link;
   }
 }

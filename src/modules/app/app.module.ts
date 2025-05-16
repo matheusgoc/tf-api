@@ -14,6 +14,7 @@ import {
 import { UserModule } from '../../modules/user/user.module';
 import { CoreModule } from '../core/core.module';
 import { AuthModule } from '../auth/auth.module';
+import { MailModule } from '@/modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AuthModule } from '../auth/auth.module';
     CoreModule,
     UserModule,
     AuthModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

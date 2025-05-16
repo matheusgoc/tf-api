@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { UserService } from '../../user/user.service';
+import { AUTH_PURPOSE, UNAUTHORIZED_REASON } from '@/modules/auth/auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,11 +19,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
+  async validate(payload: { sub: string; purpose: AUTH_PURPOSE }) {
     const user = await this.userService.findOne(payload.sub);
 
-    if (!user || user.deactivatedAt) {
-      throw new UnauthorizedException();
+    if (!user) {
+      throw new UnauthorizedException(UNAUTHORIZED_REASON.INVALID_TOKEN);
+    }
+
+    if (user.deactivatedAt) {
+      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
+    }
+
+    if (payload.purpose !== AUTH_PURPOSE.SIGN_IN) {
+      throw new UnauthorizedException(
+        UNAUTHORIZED_REASON.INVALID_TOKEN_PURPOSE,
+      );
     }
 
     delete user.password;

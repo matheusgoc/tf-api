@@ -46,13 +46,19 @@ export class UserController {
 
   @HttpCode(NO_CONTENT)
   @Delete(':id')
-  deactivate(@Param('id') id: string) {
-    this.userService.deactivate(id);
+  async deactivate(@Param('id') id: string) {
+    await this.userService.deactivate(id);
   }
 
   @HttpCode(NO_CONTENT)
   @Patch(':id/activate')
-  activate(@Param('id') id: string) {
-    this.userService.activate(id);
+  async activate(@Param('id') id: string) {
+    await this.userService.activate(id);
+  }
+
+  @HttpCode(NO_CONTENT)
+  @Patch(':id/enroll')
+  async enroll(@Param('id') id: string) {
+    await this.userService.startEnrollment(id);
   }
 }

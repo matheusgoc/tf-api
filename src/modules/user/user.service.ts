@@ -16,10 +16,16 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ListUserDto } from './dto/list-user.dto';
 import { PageDto, PageMetaDto } from '../core/dto/page-options.dto';
 import { EncryptionService } from '../core/encryption/encryption.service';
+import { AUTH_PURPOSE, AuthService } from '@/modules/auth/auth.service';
+import { UserMailService } from '@/modules/mail/user-mail.service';
 
 @Injectable()
 export class UserService extends EncryptionService {
-  constructor(@InjectRepository(User) private repo: MongoRepository<User>) {
+  constructor(
+    @InjectRepository(User) private repo: MongoRepository<User>,
+    private readonly userMail: UserMailService,
+    private readonly authService: AuthService,
+  ) {
     super();
   }
 
@@ -97,6 +103,7 @@ export class UserService extends EncryptionService {
         'createdAt',
         'updatedAt',
         'deactivatedAt',
+        'enrolledAt',
       ],
     });
 
@@ -108,7 +115,7 @@ export class UserService extends EncryptionService {
     return new PageDto(entities, pageMetaData);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<User> {
     const user = await this.repo.findOneBy({ _id: { $eq: new ObjectId(id) } });
 
     if (!user) {
@@ -151,6 +158,38 @@ export class UserService extends EncryptionService {
         region: dto.profile.region,
       },
     });
+
+    const createdUser = await this.repo.save(user);
+
+    this.startEnrollment(createdUser.id.toString());
+
+    return createdUser;
+  }
+
+  async startEnrollment(id: string) {
+    const user = await this.findOne(id);
+
+    if (user.enrolledAt) {
+      throw new UnprocessableEntityException('USER_IS_ENROLLED');
+    }
+
+    user.deactivatedAt = null;
+
+    await this.repo.save(user);
+
+    const token = this.authService.generateToken(user, AUTH_PURPOSE.ENROLL);
+    this.userMail.sendEnrollEmail(user, token.access_token);
+  }
+
+  async enroll(id: string, password) {
+    const user = await this.findOne(id);
+
+    if (user.enrolledAt) {
+      throw new UnprocessableEntityException('USER_IS_ENROLLED');
+    }
+
+    user.password = await this.hashPassword(password);
+    user.enrolledAt = new Date();
 
     return this.repo.save(user);
   }

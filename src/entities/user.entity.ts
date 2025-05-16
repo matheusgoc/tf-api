@@ -61,4 +61,7 @@ export class User {
 
   @Column({ type: 'timestamp' })
   deactivatedAt?: Date;
+
+  @Column({ type: 'timestamp' })
+  enrolledAt?: Date;
 }
