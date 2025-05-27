@@ -112,6 +112,7 @@ response: {
 	"access_token": string,
 	"token_type": "Bearer",
 	"expires_in": seconds,
+  "purpose": "sign_in",
 	"user": User
 }
 ```

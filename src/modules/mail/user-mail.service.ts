@@ -28,9 +28,28 @@ export class UserMailService extends MailService {
     };
 
     await this.mailer.sendMail({
-      to: user.email,
+      to: `${this.context.name}<${user.email}>`,
       subject: this.context.subject,
       template: `${language}/user-enroll`,
+      context: this.context,
+    });
+  }
+  async sendResetPasswordEmail(user: User, token: string) {
+    const language = user.profile?.language ?? USER_PROFILE_LANGUAGE.PT_BR;
+    const dictionary = await this.i18n.getDictionary(language);
+    this.context = {
+      ...this.context,
+      subject: dictionary.mails.auth.resetPassword.subject,
+      name: user.name.split(' ')[0],
+      resetPasswordUrl: this.generateFrontendLink(
+        `control/auth/reset-password?token=${token}`,
+      ),
+    };
+
+    await this.mailer.sendMail({
+      to: `${this.context.name}<${user.email}>`,
+      subject: this.context.subject,
+      template: `${language}/auth-reset-password`,
       context: this.context,
     });
   }

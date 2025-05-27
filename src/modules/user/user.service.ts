@@ -237,6 +237,6 @@ export class UserService extends EncryptionService {
   async setPassword(id: string, password: string) {
     const user = await this.findOne(id);
     user.password = await this.hashPassword(password);
-    await this.repo.save(user);
+    return this.repo.save(user);
   }
 }

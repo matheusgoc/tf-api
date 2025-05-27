@@ -2,6 +2,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -9,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { EncryptionService } from '../core/encryption/encryption.service';
 import { User } from '../../entities/user.entity';
-import { EnrollDto } from '@/modules/auth/dto/enroll.dto';
+import { UserMailService } from '@/modules/mail/user-mail.service';
 
 export enum AUTH_PURPOSE {
   SIGN_IN = 'sign_in',
@@ -21,12 +22,15 @@ export enum AUTH_PURPOSE {
 }
 
 export enum UNAUTHORIZED_REASON {
+  CREDENTIALS_NOT_MATCH = 'CREDENTIALS_NOT_MATCH',
   INVALID_TOKEN = 'INVALID_TOKEN',
   EXPIRED_TOKEN = 'EXPIRED_TOKEN',
   REVOKED_TOKEN = 'REVOKED_TOKEN',
   INVALID_TOKEN_PURPOSE = 'INVALID_TOKEN_PURPOSE',
   USER_NOT_ACTIVE = 'USER_NOT_ACTIVE',
   USER_IS_ENROLLED = 'USER_IS_ENROLLED',
+  USER_NOT_ENROLLED = 'USER_NOT_ENROLLED',
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
 }
 
 @Injectable()
@@ -35,6 +39,7 @@ export class AuthService extends EncryptionService {
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly userMailService: UserMailService,
   ) {
     super();
   }
@@ -75,16 +80,6 @@ export class AuthService extends EncryptionService {
     };
   }
 
-  async enroll(dto: EnrollDto) {
-    const decodedToken = this.verifyToken(dto.token, AUTH_PURPOSE.ENROLL);
-
-    const { sub: id } = decodedToken;
-
-    const enrolledUser = await this.userService.enroll(id, dto.password);
-
-    return this.generateToken(enrolledUser, AUTH_PURPOSE.SIGN_IN);
-  }
-
   verifyToken(token: string, purpose: AUTH_PURPOSE) {
     let decodedToken: { sub: string; purpose: AUTH_PURPOSE };
 
@@ -110,5 +105,42 @@ export class AuthService extends EncryptionService {
     }
 
     return decodedToken;
+  }
+
+  async enroll(token: string, password: string) {
+    const decodedToken = this.verifyToken(token, AUTH_PURPOSE.ENROLL);
+
+    const { sub: id } = decodedToken;
+
+    const enrolledUser = await this.userService.enroll(id, password);
+
+    return this.generateToken(enrolledUser, AUTH_PURPOSE.SIGN_IN);
+  }
+
+  async rememberPassword(email: string) {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException(UNAUTHORIZED_REASON.USER_NOT_FOUND);
+    }
+    if (!user.enrolledAt) {
+      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ENROLLED);
+    }
+    if (user.deactivatedAt) {
+      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
+    }
+
+    const token = this.generateToken(user, AUTH_PURPOSE.RESET_PSW);
+
+    this.userMailService.sendResetPasswordEmail(user, token.access_token);
+  }
+
+  async resetPassword(token: string, password: string) {
+    const decodedToken = this.verifyToken(token, AUTH_PURPOSE.RESET_PSW);
+
+    const { sub: id } = decodedToken;
+
+    const user = await this.userService.setPassword(id, password);
+
+    return this.generateToken(user, AUTH_PURPOSE.SIGN_IN);
   }
 }

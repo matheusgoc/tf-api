@@ -4,6 +4,11 @@
       "enroll": {
         "subject": "Bem-vinda(o) à Loja Thaíza Francischini!"
       }
+    },
+    "auth": {
+      "resetPassword": {
+        "subject": "Redefinir senha"
+      }
     }
   }
 }
