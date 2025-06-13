@@ -22,18 +22,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: { sub: string; purpose: AUTH_PURPOSE }) {
     const user = await this.userService.findOne(payload.sub);
 
-    if (!user) {
+    if (!user || payload.purpose !== AUTH_PURPOSE.SIGN_IN) {
       throw new UnauthorizedException(UNAUTHORIZED_REASON.INVALID_TOKEN);
     }
 
     if (user.deactivatedAt) {
       throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
-    }
-
-    if (payload.purpose !== AUTH_PURPOSE.SIGN_IN) {
-      throw new UnauthorizedException(
-        UNAUTHORIZED_REASON.INVALID_TOKEN_PURPOSE,
-      );
     }
 
     delete user.password;

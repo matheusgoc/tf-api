@@ -7,7 +7,6 @@ import {
   Post,
   Req,
   Request,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { NO_CONTENT } from 'http-status';
@@ -16,7 +15,7 @@ import { UserService } from '../../modules/user/user.service';
 import { UserProfileDto } from '../../modules/user/dto/user-profile.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { User } from '../../entities/user.entity';
-import { AUTH_PURPOSE, AuthService, UNAUTHORIZED_REASON } from './auth.service';
+import { AUTH_PURPOSE, AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { SkipAuth } from './decorators/skip-auth.decorator';
 import { EnrollDto } from '@/modules/auth/dto/enroll.dto';
@@ -56,24 +55,7 @@ export class AuthController {
   @SkipAuth()
   @Patch('token/verify')
   async verify(@Body() dto: TokenVerifyDTO) {
-    const decodedToken = this.authService.verifyToken(dto.token, dto.purpose);
-    const { sub: id } = decodedToken;
-    const user = await this.userService.findOne(id);
-
-    if (dto.purpose === AUTH_PURPOSE.ENROLL && user.enrolledAt) {
-      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_IS_ENROLLED);
-    }
-
-    if (dto.purpose !== AUTH_PURPOSE.ENROLL) {
-      if (!user.enrolledAt) {
-        throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ENROLLED);
-      }
-      if (user.deactivatedAt) {
-        throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
-      }
-    }
-
-    return user;
+    return this.authService.verifyToken(dto.token, dto.purpose);
   }
 
   @SkipAuth()

@@ -80,7 +80,7 @@ export class AuthService extends EncryptionService {
     };
   }
 
-  verifyToken(token: string, purpose: AUTH_PURPOSE) {
+  async verifyToken(token: string, purpose: AUTH_PURPOSE) {
     let decodedToken: { sub: string; purpose: AUTH_PURPOSE };
 
     try {
@@ -96,7 +96,7 @@ export class AuthService extends EncryptionService {
       throw new UnauthorizedException(error);
     }
 
-    const { purpose: tokenPurpose } = decodedToken;
+    const { sub: id, purpose: tokenPurpose } = decodedToken;
 
     if (tokenPurpose !== purpose) {
       throw new UnauthorizedException(
@@ -104,29 +104,42 @@ export class AuthService extends EncryptionService {
       );
     }
 
-    return decodedToken;
+    const user = await this.userService.findOne(id);
+
+    // user must be active in any case except for resetting password
+    if (purpose !== AUTH_PURPOSE.RESET_PSW) {
+      if (user.deactivatedAt) {
+        throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
+      }
+    }
+
+    // user must not be enrolled to perform enroll action
+    if (purpose === AUTH_PURPOSE.ENROLL) {
+      if (user.enrolledAt) {
+        throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_IS_ENROLLED);
+      }
+    }
+
+    // user must be enrolled in any other case
+    else if (!user.enrolledAt) {
+      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ENROLLED);
+    }
+
+    return user;
   }
 
   async enroll(token: string, password: string) {
-    const decodedToken = this.verifyToken(token, AUTH_PURPOSE.ENROLL);
+    const user = await this.verifyToken(token, AUTH_PURPOSE.ENROLL);
 
-    const { sub: id } = decodedToken;
-
-    const enrolledUser = await this.userService.enroll(id, password);
+    const enrolledUser = await this.userService.enroll(user, password);
 
     return this.generateToken(enrolledUser, AUTH_PURPOSE.SIGN_IN);
   }
 
   async rememberPassword(email: string) {
     const user = await this.userService.findByEmail(email);
-    if (!user) {
+    if (!user || !user.enrolledAt) {
       throw new NotFoundException(UNAUTHORIZED_REASON.USER_NOT_FOUND);
-    }
-    if (!user.enrolledAt) {
-      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ENROLLED);
-    }
-    if (user.deactivatedAt) {
-      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
     }
 
     const token = this.generateToken(user, AUTH_PURPOSE.RESET_PSW);
@@ -135,12 +148,10 @@ export class AuthService extends EncryptionService {
   }
 
   async resetPassword(token: string, password: string) {
-    const decodedToken = this.verifyToken(token, AUTH_PURPOSE.RESET_PSW);
+    const user = await this.verifyToken(token, AUTH_PURPOSE.RESET_PSW);
 
-    const { sub: id } = decodedToken;
+    const savedUser = await this.userService.setPassword(user, password);
 
-    const user = await this.userService.setPassword(id, password);
-
-    return this.generateToken(user, AUTH_PURPOSE.SIGN_IN);
+    return this.generateToken(savedUser, AUTH_PURPOSE.SIGN_IN);
   }
 }

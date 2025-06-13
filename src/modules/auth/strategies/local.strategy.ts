@@ -12,18 +12,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
 
   async validate(username: string, password: string) {
     const user = await this.authService.authenticate(username, password);
-    if (!user) {
+    if (!user || user.deactivatedAt || !user.enrolledAt) {
       throw new UnauthorizedException(
         UNAUTHORIZED_REASON.CREDENTIALS_NOT_MATCH,
       );
-    }
-
-    if (!user.enrolledAt) {
-      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ENROLLED);
-    }
-
-    if (user.deactivatedAt) {
-      throw new UnauthorizedException(UNAUTHORIZED_REASON.USER_NOT_ACTIVE);
     }
 
     return user;

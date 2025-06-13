@@ -16,7 +16,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ListUserDto } from './dto/list-user.dto';
 import { PageDto, PageMetaDto } from '../core/dto/page-options.dto';
 import { EncryptionService } from '../core/encryption/encryption.service';
-import { AUTH_PURPOSE, AuthService } from '@/modules/auth/auth.service';
+import {
+  AUTH_PURPOSE,
+  AuthService,
+  UNAUTHORIZED_REASON,
+} from '@/modules/auth/auth.service';
 import { UserMailService } from '@/modules/mail/user-mail.service';
 
 @Injectable()
@@ -170,10 +174,10 @@ export class UserService extends EncryptionService {
     const user = await this.findOne(id);
 
     if (user.enrolledAt) {
-      throw new UnprocessableEntityException('USER_IS_ENROLLED');
+      throw new UnprocessableEntityException(
+        UNAUTHORIZED_REASON.USER_IS_ENROLLED,
+      );
     }
-
-    user.deactivatedAt = null;
 
     await this.repo.save(user);
 
@@ -181,13 +185,7 @@ export class UserService extends EncryptionService {
     this.userMail.sendEnrollEmail(user, token.access_token);
   }
 
-  async enroll(id: string, password) {
-    const user = await this.findOne(id);
-
-    if (user.enrolledAt) {
-      throw new UnprocessableEntityException('USER_IS_ENROLLED');
-    }
-
+  async enroll(user: User, password: string) {
     user.password = await this.hashPassword(password);
     user.enrolledAt = new Date();
 
@@ -234,8 +232,7 @@ export class UserService extends EncryptionService {
     return this.repo.save(user);
   }
 
-  async setPassword(id: string, password: string) {
-    const user = await this.findOne(id);
+  async setPassword(user: User, password: string) {
     user.password = await this.hashPassword(password);
     return this.repo.save(user);
   }
