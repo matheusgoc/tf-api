@@ -18,7 +18,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ListUserDto } from './dto/list-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '@/modules/auth/decorators/roles.decorator';
+import { USER_ROLE } from '@/entities/user.entity';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 
+@Roles(USER_ROLE.ADMIN)
+@UseGuards(RolesGuard)
 @UseGuards(JwtAuthGuard)
 @Controller('user')
 export class UserController {
