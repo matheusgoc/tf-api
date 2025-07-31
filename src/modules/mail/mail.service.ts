@@ -11,9 +11,11 @@ export class MailService extends BaseService {
   protected context: MailContext;
   constructor(protected readonly config: ConfigService) {
     super();
+    const bucket = this.config.getOrThrow('AWS_S3_ASSETS_BUCKET');
+    const region = this.config.getOrThrow('AWS_REGION');
     this.context = {
       siteUrl: this.generateFrontendLink(''),
-      s3Url: `${this.config.getOrThrow('S3_ASSETS_URL')}`,
+      s3Url: this.generateS3Url(bucket, region),
     };
   }
   protected generateFrontendLink(

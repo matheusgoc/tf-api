@@ -40,4 +40,8 @@ export class BaseService {
     const link = `${protocol}://${host}/${url}`;
     return params ? `${link}?${stringify(params)}` : link;
   }
+
+  generateS3Url(bucket: string, region: string) {
+    return `https://${bucket}.s3.${region}.amazonaws.com`;
+  }
 }

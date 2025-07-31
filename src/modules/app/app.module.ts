@@ -15,6 +15,7 @@ import { UserModule } from '../../modules/user/user.module';
 import { CoreModule } from '../core/core.module';
 import { AuthModule } from '../auth/auth.module';
 import { MailModule } from '@/modules/mail/mail.module';
+import { CollectionModule } from '@/modules/collection/collection.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MailModule } from '@/modules/mail/mail.module';
     UserModule,
     AuthModule,
     MailModule,
+    CollectionModule,
   ],
   controllers: [AppController],
   providers: [
